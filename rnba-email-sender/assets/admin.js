@@ -257,10 +257,22 @@
 
             this.addLog('Початок розсилки на ' + this.customers.length + ' адрес...', 'info');
 
+            // Start batch sending
+            this.batchSend({
+                template: template,
+                subject: subject,
+                batchIndex: 0,
+                totalSent: 0,
+                totalFailed: 0
+            });
+        },
+
+        batchSend: function(params) {
             var ajaxData = {
                 nonce: rnbaEmailSender.nonce,
-                template: template,
-                subject: subject
+                template: params.template,
+                subject: params.subject,
+                batch_index: params.batchIndex
             };
 
             if (this.activeMode === 'products') {
@@ -278,13 +290,10 @@
                 success: function(response) {
                     if (response.success) {
                         var data = response.data;
-                        var msg = 'Розсилка завершена: ' + data.sent + '/' + data.total + ' надіслано';
 
-                        if (data.failed > 0) {
-                            msg += ', ' + data.failed + ' помилок';
-                        }
-
-                        RNBAEmailSender.showAlert(msg, data.failed === 0 ? 'success' : 'warning');
+                        // Update totals
+                        params.totalSent += data.sent;
+                        params.totalFailed += data.failed;
 
                         // Add individual logs
                         data.log.forEach(function(entry) {
@@ -294,18 +303,37 @@
                             );
                         });
 
-                        RNBAEmailSender.addLog(msg, data.failed === 0 ? 'success' : 'error');
+                        // Update progress
+                        var progress = Math.round((data.processed / data.total) * 100);
+                        $('#send_emails').text('Відправка... ' + progress + '%');
+                        RNBAEmailSender.addLog('Оброблено ' + data.processed + '/' + data.total, 'info');
+
+                        // Continue or finish
+                        if (data.has_more) {
+                            params.batchIndex = data.next_batch;
+                            RNBAEmailSender.batchSend(params);
+                        } else {
+                            // Finished
+                            var msg = 'Розсилка завершена: ' + params.totalSent + '/' + data.total + ' надіслано';
+
+                            if (params.totalFailed > 0) {
+                                msg += ', ' + params.totalFailed + ' помилок';
+                            }
+
+                            RNBAEmailSender.showAlert(msg, params.totalFailed === 0 ? 'success' : 'warning');
+                            RNBAEmailSender.addLog(msg, params.totalFailed === 0 ? 'success' : 'error');
+                            $('#send_emails').prop('disabled', false).text('Надіслати листи');
+                        }
                     } else {
                         RNBAEmailSender.showAlert(response.data);
                         RNBAEmailSender.addLog(response.data, 'error');
+                        $('#send_emails').prop('disabled', false).text('Надіслати листи');
                     }
                 },
                 error: function() {
                     RNBAEmailSender.showAlert('Помилка з\'єднання з сервером');
                     RNBAEmailSender.addLog('Помилка з\'єднання', 'error');
-                },
-                complete: function() {
-                    $button.prop('disabled', false).text('Надіслати листи');
+                    $('#send_emails').prop('disabled', false).text('Надіслати листи');
                 }
             });
         },

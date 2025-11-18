@@ -345,6 +345,8 @@ class RNBA_Email_Sender {
         $product_ids = isset($_POST['product_ids']) ? sanitize_text_field($_POST['product_ids']) : '';
         $template = isset($_POST['template']) ? sanitize_text_field($_POST['template']) : '';
         $subject = isset($_POST['subject']) ? sanitize_text_field($_POST['subject']) : '';
+        $batch_index = isset($_POST['batch_index']) ? intval($_POST['batch_index']) : 0;
+        $batch_size = 10;
 
         if (empty($template)) {
             wp_send_json_error('Виберіть шаблон листа');
@@ -368,11 +370,15 @@ class RNBA_Email_Sender {
             wp_send_json_error('Клієнтів не знайдено');
         }
 
+        $total = count($customers);
+        $offset = $batch_index * $batch_size;
+        $batch_customers = array_slice($customers, $offset, $batch_size);
+
         $sent = 0;
         $failed = 0;
         $log = array();
 
-        foreach ($customers as $customer) {
+        foreach ($batch_customers as $customer) {
             $result = $this->send_email(
                 $customer['email'],
                 $subject,
@@ -400,10 +406,17 @@ class RNBA_Email_Sender {
             usleep(100000); // 0.1 second
         }
 
+        $processed = $offset + count($batch_customers);
+        $has_more = $processed < $total;
+
         wp_send_json_success(array(
             'sent' => $sent,
             'failed' => $failed,
-            'total' => count($customers),
+            'batch_total' => count($batch_customers),
+            'total' => $total,
+            'processed' => $processed,
+            'has_more' => $has_more,
+            'next_batch' => $batch_index + 1,
             'log' => $log,
         ));
     }
@@ -453,6 +466,8 @@ class RNBA_Email_Sender {
         $email_list = isset($_POST['email_list']) ? sanitize_textarea_field($_POST['email_list']) : '';
         $template = isset($_POST['template']) ? sanitize_text_field($_POST['template']) : '';
         $subject = isset($_POST['subject']) ? sanitize_text_field($_POST['subject']) : '';
+        $batch_index = isset($_POST['batch_index']) ? intval($_POST['batch_index']) : 0;
+        $batch_size = 10;
 
         if (empty($template)) {
             wp_send_json_error('Виберіть шаблон листа');
@@ -468,11 +483,15 @@ class RNBA_Email_Sender {
             wp_send_json_error('Не знайдено жодної коректної email адреси');
         }
 
+        $total = count($emails);
+        $offset = $batch_index * $batch_size;
+        $batch_emails = array_slice($emails, $offset, $batch_size);
+
         $sent = 0;
         $failed = 0;
         $log = array();
 
-        foreach ($emails as $email) {
+        foreach ($batch_emails as $email) {
             $result = $this->send_email(
                 $email,
                 $subject,
@@ -504,10 +523,17 @@ class RNBA_Email_Sender {
             usleep(100000); // 0.1 second
         }
 
+        $processed = $offset + count($batch_emails);
+        $has_more = $processed < $total;
+
         wp_send_json_success(array(
             'sent' => $sent,
             'failed' => $failed,
-            'total' => count($emails),
+            'batch_total' => count($batch_emails),
+            'total' => $total,
+            'processed' => $processed,
+            'has_more' => $has_more,
+            'next_batch' => $batch_index + 1,
             'log' => $log,
         ));
     }
