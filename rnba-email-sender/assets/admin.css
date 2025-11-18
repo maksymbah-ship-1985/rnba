@@ -1,0 +1,238 @@
+.rnba-email-sender {
+    max-width: 1400px;
+}
+
+.rnba-container {
+    display: flex;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.rnba-settings {
+    flex: 0 0 400px;
+}
+
+.rnba-results {
+    flex: 1;
+}
+
+.rnba-card {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    border-radius: 4px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.rnba-card h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
+    font-size: 16px;
+}
+
+.rnba-field {
+    margin-bottom: 15px;
+}
+
+.rnba-field:last-child {
+    margin-bottom: 0;
+}
+
+.rnba-field label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+}
+
+.rnba-field input[type="text"],
+.rnba-field input[type="email"],
+.rnba-field select {
+    width: 100%;
+    max-width: 100%;
+}
+
+.rnba-field .description {
+    margin-top: 5px;
+    color: #666;
+    font-size: 12px;
+}
+
+.rnba-count {
+    text-align: center;
+    padding: 20px;
+    background: #f0f0f1;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.rnba-count .count {
+    display: block;
+    font-size: 48px;
+    font-weight: 700;
+    color: #c5381d;
+    line-height: 1;
+}
+
+.rnba-customers-list {
+    max-height: 300px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 15px;
+}
+
+.rnba-customers-list .no-results {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+    margin: 0;
+}
+
+.rnba-customers-list table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+}
+
+.rnba-customers-list th,
+.rnba-customers-list td {
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 13px;
+}
+
+.rnba-customers-list th {
+    background: #f9f9f9;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+}
+
+.rnba-customers-list tr:last-child td {
+    border-bottom: none;
+}
+
+.rnba-customers-list tr:hover td {
+    background: #f5f5f5;
+}
+
+.rnba-actions {
+    text-align: center;
+    padding-top: 10px;
+}
+
+.rnba-actions .button-large {
+    padding: 8px 30px;
+    height: auto;
+    font-size: 14px;
+}
+
+.rnba-log {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background: #f9f9f9;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+.rnba-log .log-empty {
+    margin: 0;
+    color: #666;
+    text-align: center;
+}
+
+.rnba-log .log-entry {
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.rnba-log .log-entry:last-child {
+    border-bottom: none;
+}
+
+.rnba-log .log-entry.success {
+    color: #46b450;
+}
+
+.rnba-log .log-entry.error {
+    color: #dc3232;
+}
+
+.rnba-log .log-entry .time {
+    color: #666;
+    margin-right: 10px;
+}
+
+/* Loading state */
+.rnba-loading {
+    position: relative;
+    pointer-events: none;
+    opacity: 0.7;
+}
+
+.rnba-loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 20px;
+    height: 20px;
+    margin: -10px 0 0 -10px;
+    border: 2px solid #ccc;
+    border-top-color: #c5381d;
+    border-radius: 50%;
+    animation: rnba-spin 0.8s linear infinite;
+}
+
+@keyframes rnba-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Responsive */
+@media screen and (max-width: 1200px) {
+    .rnba-container {
+        flex-direction: column;
+    }
+
+    .rnba-settings {
+        flex: none;
+    }
+}
+
+/* Button states */
+.button:disabled {
+    cursor: not-allowed;
+}
+
+/* Progress indicator */
+.rnba-progress {
+    margin-top: 10px;
+    padding: 10px;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    text-align: center;
+}
+
+.rnba-progress .progress-bar {
+    height: 20px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-top: 10px;
+}
+
+.rnba-progress .progress-bar-fill {
+    height: 100%;
+    background: #c5381d;
+    transition: width 0.3s ease;
+}
