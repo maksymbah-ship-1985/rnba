@@ -6,7 +6,7 @@
  * Version: 1.0.0
  * Author: RNBA
  * Author URI: https://rnba.com.ua
- * Text Domain: rnba-email-sender
+ * Text Domain: rnba-forum-email-NOTIFIER
  * Requires at least: 5.0
  * Requires PHP: 7.4
  * WC requires at least: 5.0
@@ -51,7 +51,7 @@ class RNBA_Email_Sender {
             'RNBA Email Sender',
             'RNBA Розсилка',
             'manage_woocommerce',
-            'rnba-email-sender',
+            'rnba-forum-email-NOTIFIER',
             array($this, 'render_admin_page'),
             'dashicons-email-alt',
             56
@@ -59,26 +59,26 @@ class RNBA_Email_Sender {
     }
 
     public function enqueue_admin_scripts($hook) {
-        if ('toplevel_page_rnba-email-sender' !== $hook) {
+        if ('toplevel_page_rnba-forum-email-NOTIFIER' !== $hook) {
             return;
         }
 
         wp_enqueue_style(
-            'rnba-email-sender-admin',
+            'rnba-forum-email-NOTIFIER-admin',
             plugin_dir_url(__FILE__) . 'assets/admin.css',
             array(),
             '1.0.0'
         );
 
         wp_enqueue_script(
-            'rnba-email-sender-admin',
+            'rnba-forum-email-NOTIFIER-admin',
             plugin_dir_url(__FILE__) . 'assets/admin.js',
             array('jquery'),
             '1.0.0',
             true
         );
 
-        wp_localize_script('rnba-email-sender-admin', 'rnbaEmailSender', array(
+        wp_localize_script('rnba-forum-email-NOTIFIER-admin', 'rnbaEmailSender', array(
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('rnba_email_sender_nonce'),
         ));
@@ -116,7 +116,7 @@ class RNBA_Email_Sender {
     public function render_admin_page() {
         $templates = $this->get_available_templates();
         ?>
-        <div class="wrap rnba-email-sender">
+        <div class="wrap rnba-forum-email-NOTIFIER">
             <h1>RNBA Email Sender</h1>
 
             <div class="rnba-container">
