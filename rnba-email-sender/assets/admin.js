@@ -157,7 +157,9 @@
             html += '<tbody>';
 
             customers.forEach(function(customer) {
-                var name = (customer.first_name + ' ' + customer.last_name).trim() || '—';
+                var firstName = customer.first_name || '';
+                var lastName = customer.last_name || '';
+                var name = (firstName + ' ' + lastName).trim() || '—';
                 html += '<tr>';
                 html += '<td>' + this.escapeHtml(customer.email) + '</td>';
                 html += '<td>' + this.escapeHtml(name) + '</td>';
