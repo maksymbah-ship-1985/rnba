@@ -239,7 +239,7 @@ class RNBA_Email_Sender {
 
         $placeholders = implode(',', array_fill(0, count($product_ids), '%d'));
 
-        // Get all completed/processing orders containing these products
+        // Get all completed orders containing these products
         $query = $wpdb->prepare(
             "SELECT DISTINCT
                 pm_email.meta_value as email,
@@ -253,7 +253,7 @@ class RNBA_Email_Sender {
             LEFT JOIN {$wpdb->postmeta} pm_first ON o.ID = pm_first.post_id AND pm_first.meta_key = '_billing_first_name'
             LEFT JOIN {$wpdb->postmeta} pm_last ON o.ID = pm_last.post_id AND pm_last.meta_key = '_billing_last_name'
             WHERE o.post_type IN ('shop_order', 'shop_order_placehold')
-            AND o.post_status IN ('wc-completed', 'wc-processing')
+            AND o.post_status = 'wc-completed'
             AND oi.order_item_type = 'line_item'
             AND oim.meta_key = '_product_id'
             AND oim.meta_value IN ($placeholders)
