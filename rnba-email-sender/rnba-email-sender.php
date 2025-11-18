@@ -41,6 +41,8 @@ class RNBA_Email_Sender {
         add_action('wp_ajax_rnba_send_emails', array($this, 'ajax_send_emails'));
         add_action('wp_ajax_rnba_get_customers', array($this, 'ajax_get_customers'));
         add_action('wp_ajax_rnba_send_test_email', array($this, 'ajax_send_test_email'));
+        add_action('wp_ajax_rnba_parse_email_list', array($this, 'ajax_parse_email_list'));
+        add_action('wp_ajax_rnba_send_to_email_list', array($this, 'ajax_send_to_email_list'));
 
         // Register email templates
         add_action('init', array($this, 'register_templates'));
@@ -125,10 +127,28 @@ class RNBA_Email_Sender {
                     <div class="rnba-card">
                         <h2>Налаштування розсилки</h2>
 
-                        <div class="rnba-field">
-                            <label for="product_ids">ID товарів (через кому):</label>
-                            <input type="text" id="product_ids" name="product_ids" placeholder="123, 456, 789" class="regular-text">
-                            <p class="description">Введіть ID товарів WooCommerce, покупцям яких потрібно надіслати лист</p>
+                        <!-- Source tabs -->
+                        <div class="rnba-source-tabs">
+                            <button type="button" class="rnba-tab active" data-tab="products">За товарами</button>
+                            <button type="button" class="rnba-tab" data-tab="emails">За списком email</button>
+                        </div>
+
+                        <!-- Tab: Products -->
+                        <div class="rnba-tab-content active" id="tab-products">
+                            <div class="rnba-field">
+                                <label for="product_ids">ID товарів (через кому):</label>
+                                <input type="text" id="product_ids" name="product_ids" placeholder="123, 456, 789" class="regular-text">
+                                <p class="description">Введіть ID товарів WooCommerce, покупцям яких потрібно надіслати лист</p>
+                            </div>
+                        </div>
+
+                        <!-- Tab: Email list -->
+                        <div class="rnba-tab-content" id="tab-emails">
+                            <div class="rnba-field">
+                                <label for="email_list">Список email (по одному на рядок):</label>
+                                <textarea id="email_list" name="email_list" rows="8" placeholder="email1@example.com&#10;email2@example.com&#10;email3@example.com"></textarea>
+                                <p class="description">Введіть email адреси, кожна з нового рядка</p>
+                            </div>
                         </div>
 
                         <div class="rnba-field">
@@ -386,6 +406,138 @@ class RNBA_Email_Sender {
             'total' => count($customers),
             'log' => $log,
         ));
+    }
+
+    public function ajax_parse_email_list() {
+        check_ajax_referer('rnba_email_sender_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error('Недостатньо прав');
+        }
+
+        $email_list = isset($_POST['email_list']) ? sanitize_textarea_field($_POST['email_list']) : '';
+
+        if (empty($email_list)) {
+            wp_send_json_error('Введіть список email адрес');
+        }
+
+        $emails = $this->parse_email_list($email_list);
+
+        if (empty($emails)) {
+            wp_send_json_error('Не знайдено жодної коректної email адреси');
+        }
+
+        // Convert to customer format
+        $customers = array();
+        foreach ($emails as $email) {
+            $customers[] = array(
+                'email' => $email,
+                'first_name' => '',
+                'last_name' => '',
+            );
+        }
+
+        wp_send_json_success(array(
+            'customers' => $customers,
+            'count' => count($customers),
+        ));
+    }
+
+    public function ajax_send_to_email_list() {
+        check_ajax_referer('rnba_email_sender_nonce', 'nonce');
+
+        if (!current_user_can('manage_woocommerce')) {
+            wp_send_json_error('Недостатньо прав');
+        }
+
+        $email_list = isset($_POST['email_list']) ? sanitize_textarea_field($_POST['email_list']) : '';
+        $template = isset($_POST['template']) ? sanitize_text_field($_POST['template']) : '';
+        $subject = isset($_POST['subject']) ? sanitize_text_field($_POST['subject']) : '';
+
+        if (empty($template)) {
+            wp_send_json_error('Виберіть шаблон листа');
+        }
+
+        if (empty($subject)) {
+            wp_send_json_error('Введіть тему листа');
+        }
+
+        $emails = $this->parse_email_list($email_list);
+
+        if (empty($emails)) {
+            wp_send_json_error('Не знайдено жодної коректної email адреси');
+        }
+
+        $sent = 0;
+        $failed = 0;
+        $log = array();
+
+        foreach ($emails as $email) {
+            $result = $this->send_email(
+                $email,
+                $subject,
+                $template,
+                array(
+                    'email' => $email,
+                    'first_name' => '',
+                    'last_name' => '',
+                )
+            );
+
+            if ($result) {
+                $sent++;
+                $log[] = array(
+                    'email' => $email,
+                    'status' => 'success',
+                    'message' => 'Надіслано',
+                );
+            } else {
+                $failed++;
+                $log[] = array(
+                    'email' => $email,
+                    'status' => 'error',
+                    'message' => 'Помилка відправки',
+                );
+            }
+
+            // Small delay to prevent overwhelming the mail server
+            usleep(100000); // 0.1 second
+        }
+
+        wp_send_json_success(array(
+            'sent' => $sent,
+            'failed' => $failed,
+            'total' => count($emails),
+            'log' => $log,
+        ));
+    }
+
+    private function parse_email_list($email_list) {
+        // Split by newlines
+        $lines = preg_split('/\r\n|\r|\n/', $email_list);
+
+        $emails = array();
+        foreach ($lines as $line) {
+            $email = trim($line);
+
+            // Skip empty lines
+            if (empty($email)) {
+                continue;
+            }
+
+            // Validate email
+            if (!is_email($email)) {
+                continue;
+            }
+
+            // Normalize to lowercase and add if not duplicate
+            $email_lower = strtolower($email);
+            if (!in_array($email_lower, $emails)) {
+                $emails[] = $email_lower;
+            }
+        }
+
+        return $emails;
     }
 
     private function send_email($to, $subject, $template_key, $customer_data) {

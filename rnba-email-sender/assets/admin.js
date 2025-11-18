@@ -3,18 +3,53 @@
 
     var RNBAEmailSender = {
         customers: [],
+        activeMode: 'products', // 'products' or 'emails'
 
         init: function() {
             this.bindEvents();
         },
 
         bindEvents: function() {
+            // Tab switching
+            $('.rnba-tab').on('click', this.switchTab.bind(this));
+
+            // Actions
             $('#get_customers').on('click', this.getCustomers.bind(this));
             $('#send_test').on('click', this.sendTestEmail.bind(this));
             $('#send_emails').on('click', this.sendEmails.bind(this));
         },
 
+        switchTab: function(e) {
+            var $tab = $(e.currentTarget);
+            var tabId = $tab.data('tab');
+
+            // Update tabs
+            $('.rnba-tab').removeClass('active');
+            $tab.addClass('active');
+
+            // Update content
+            $('.rnba-tab-content').removeClass('active');
+            $('#tab-' + tabId).addClass('active');
+
+            // Update mode
+            this.activeMode = tabId;
+
+            // Reset customers
+            this.customers = [];
+            $('#customers_count .count').text('0');
+            $('#customers_list').html('<p class="no-results">Спочатку знайдіть отримувачів</p>');
+            $('#send_emails').prop('disabled', true);
+        },
+
         getCustomers: function() {
+            if (this.activeMode === 'products') {
+                this.getCustomersByProducts();
+            } else {
+                this.getCustomersByEmailList();
+            }
+        },
+
+        getCustomersByProducts: function() {
             var productIds = $('#product_ids').val().trim();
 
             if (!productIds) {
@@ -50,6 +85,57 @@
                         }
 
                         RNBAEmailSender.addLog('Знайдено ' + response.data.count + ' клієнтів', 'success');
+                    } else {
+                        RNBAEmailSender.showAlert(response.data);
+                        RNBAEmailSender.addLog(response.data, 'error');
+                    }
+                },
+                error: function() {
+                    RNBAEmailSender.showAlert('Помилка з\'єднання з сервером');
+                    RNBAEmailSender.addLog('Помилка з\'єднання', 'error');
+                },
+                complete: function() {
+                    $button.prop('disabled', false).text('Знайти клієнтів');
+                }
+            });
+        },
+
+        getCustomersByEmailList: function() {
+            var emailList = $('#email_list').val().trim();
+
+            if (!emailList) {
+                this.showAlert('Введіть список email адрес');
+                return;
+            }
+
+            var $button = $('#get_customers');
+            var $list = $('#customers_list');
+            var $count = $('#customers_count .count');
+
+            $button.prop('disabled', true).text('Обробка...');
+
+            $.ajax({
+                url: rnbaEmailSender.ajaxUrl,
+                type: 'POST',
+                data: {
+                    action: 'rnba_parse_email_list',
+                    nonce: rnbaEmailSender.nonce,
+                    email_list: emailList
+                },
+                success: function(response) {
+                    if (response.success) {
+                        RNBAEmailSender.customers = response.data.customers;
+                        $count.text(response.data.count);
+
+                        if (response.data.count > 0) {
+                            RNBAEmailSender.renderCustomersList(response.data.customers);
+                            $('#send_emails').prop('disabled', false);
+                        } else {
+                            $list.html('<p class="no-results">Не знайдено коректних email адрес</p>');
+                            $('#send_emails').prop('disabled', true);
+                        }
+
+                        RNBAEmailSender.addLog('Знайдено ' + response.data.count + ' email адрес', 'success');
                     } else {
                         RNBAEmailSender.showAlert(response.data);
                         RNBAEmailSender.addLog(response.data, 'error');
@@ -143,7 +229,6 @@
         sendEmails: function() {
             var template = $('#email_template').val();
             var subject = $('#email_subject').val().trim();
-            var productIds = $('#product_ids').val().trim();
 
             if (!template) {
                 this.showAlert('Виберіть шаблон листа');
@@ -156,11 +241,11 @@
             }
 
             if (this.customers.length === 0) {
-                this.showAlert('Спочатку знайдіть клієнтів');
+                this.showAlert('Спочатку знайдіть отримувачів');
                 return;
             }
 
-            var confirmMsg = 'Ви впевнені, що хочете надіслати листи ' + this.customers.length + ' клієнтам?';
+            var confirmMsg = 'Ви впевнені, що хочете надіслати листи ' + this.customers.length + ' отримувачам?';
             if (!confirm(confirmMsg)) {
                 return;
             }
@@ -170,16 +255,24 @@
 
             this.addLog('Початок розсилки на ' + this.customers.length + ' адрес...', 'info');
 
+            var ajaxData = {
+                nonce: rnbaEmailSender.nonce,
+                template: template,
+                subject: subject
+            };
+
+            if (this.activeMode === 'products') {
+                ajaxData.action = 'rnba_send_emails';
+                ajaxData.product_ids = $('#product_ids').val().trim();
+            } else {
+                ajaxData.action = 'rnba_send_to_email_list';
+                ajaxData.email_list = $('#email_list').val().trim();
+            }
+
             $.ajax({
                 url: rnbaEmailSender.ajaxUrl,
                 type: 'POST',
-                data: {
-                    action: 'rnba_send_emails',
-                    nonce: rnbaEmailSender.nonce,
-                    product_ids: productIds,
-                    template: template,
-                    subject: subject
-                },
+                data: ajaxData,
                 success: function(response) {
                     if (response.success) {
                         var data = response.data;

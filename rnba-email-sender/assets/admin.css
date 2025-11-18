@@ -49,9 +49,56 @@
 
 .rnba-field input[type="text"],
 .rnba-field input[type="email"],
-.rnba-field select {
+.rnba-field select,
+.rnba-field textarea {
     width: 100%;
     max-width: 100%;
+}
+
+.rnba-field textarea {
+    resize: vertical;
+    min-height: 120px;
+    font-family: monospace;
+    font-size: 13px;
+}
+
+/* Tabs */
+.rnba-source-tabs {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 15px;
+    border-bottom: 2px solid #ddd;
+    padding-bottom: 0;
+}
+
+.rnba-tab {
+    padding: 10px 20px;
+    border: none;
+    background: #f0f0f1;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 4px 4px 0 0;
+    margin-bottom: -2px;
+    transition: all 0.2s ease;
+}
+
+.rnba-tab:hover {
+    background: #e0e0e0;
+}
+
+.rnba-tab.active {
+    background: #c5381d;
+    color: #fff;
+    border-bottom: 2px solid #c5381d;
+}
+
+.rnba-tab-content {
+    display: none;
+}
+
+.rnba-tab-content.active {
+    display: block;
 }
 
 .rnba-field .description {
